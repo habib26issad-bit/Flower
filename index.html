@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To My Love</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-center: #2b0417;
+            --bg-edge: #0d0106;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, var(--bg-center) 0%, var(--bg-edge) 100%);
+            overflow: hidden;
+            font-family: 'Great Vibes', cursive, 'Georgia', serif;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .stem {
+            fill: none;
+            stroke: url(#stemGrad);
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 3.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stem.grow {
+            stroke-dashoffset: 0 !important;
+        }
+
+        .branch {
+            fill: none;
+            stroke: url(#stemGrad);
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.2s ease-out;
+        }
+        .branch.grow {
+            stroke-dashoffset: 0 !important;
+        }
+
+        .leaf {
+            transform: translate(var(--x), var(--y)) rotate(var(--rot)) scale(0);
+            transform-origin: 0px 0px;
+            opacity: 0;
+            transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 1.5s ease-out;
+        }
+        .leaf.bloom {
+            transform: translate(var(--x), var(--y)) rotate(var(--rot)) scale(1);
+            opacity: 1;
+        }
+
+        .petal {
+            transform: rotate(var(--rot)) scale(0);
+            transform-origin: 0px 0px;
+            opacity: 0;
+            transition: transform 2.5s cubic-bezier(0.25, 1, 0.3, 1.2), opacity 2s ease-in-out;
+        }
+        .petal.bloom {
+            transform: rotate(var(--rot)) scale(var(--scl));
+            opacity: 1;
+        }
+
+        #text-container {
+    position: absolute;
+    z-index: 10;
+    top: 50%;
+    left: 15%;
+    margin-top: -5vh; 
+    transform: translateY(30px);
+    opacity: 0;
+    transition: opacity 4s ease-in-out, transform 4s ease-out;
+    pointer-events: none;
+}
+
+#text-container.text-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.text-content {
+    font-size: clamp(4rem, 8vw, 8rem);
+    color: #ffb3c6;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(255, 51, 102, 0.5), 
+                 0 0 20px rgba(255, 51, 102, 0.5), 
+                 0 0 40px rgba(255, 0, 85, 0.8);
+    will-change: transform, text-shadow; 
+}
+
+#text-container.text-visible .text-content {
+    animation: 
+        floatSmooth 4s ease-in-out infinite alternate, 
+        pulseGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes floatSmooth {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-15px); }
+}
+
+@keyframes pulseGlow {
+    0% { text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 25px rgba(255, 51, 102, 0.6), 0 0 45px rgba(255, 0, 85, 0.8); }
+    100% { text-shadow: 0 0 15px rgba(255, 102, 153, 0.9), 0 0 35px rgba(255, 51, 102, 0.9), 0 0 65px rgba(255, 0, 85, 1); }
+}
+
+@media (max-width: 768px) {
+    #text-container {
+        left: 0;
+        width: 100%;
+        text-align: center;
+        top: 20%;
+        transform: translateY(20px);
+    }
+    #text-container.text-visible {
+        transform: translateY(0);
+    }
+}
+
+        #text-container.text-visible {
+            opacity: 1;
+            transform: translateY(-50%) translateY(0);
+            animation: float 4s ease-in-out infinite alternate 4s;
+        }
+
+        #text-container.text-visible .text-content {
+            animation: pulseGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(-50%) translateY(0px); }
+            100% { transform: translateY(-50%) translateY(-15px); }
+        }
+
+        @keyframes pulseGlow {
+            0% { text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 25px rgba(255, 51, 102, 0.6), 0 0 45px rgba(255, 0, 85, 0.8); }
+            100% { text-shadow: 0 0 15px rgba(255, 102, 153, 0.9), 0 0 35px rgba(255, 51, 102, 0.9), 0 0 65px rgba(255, 0, 85, 1); }
+        }
+
+        .particle {
+            fill: #ffb3c6;
+            opacity: 0;
+            animation: drift var(--duration) linear infinite;
+            animation-delay: var(--delay);
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(0) scale(0); opacity: 0; }
+            20% { opacity: 0.6; transform: translateY(-20vh) scale(1); }
+            80% { opacity: 0.6; transform: translateY(-80vh) scale(1); }
+            100% { transform: translateY(-100vh) scale(0); opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            #text-container {
+                left: 0;
+                width: 100%;
+                text-align: center;
+                top: 20%;
+                transform: translateY(20px);
+            }
+            #text-container.text-visible {
+                transform: translateY(0);
+            }
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                100% { transform: translateY(-15px); }
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <svg id="flowerSvg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity="0.6"/>
+                </filter>
+
+                <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#072b12"/>
+                    <stop offset="50%" stop-color="#146b30"/>
+                    <stop offset="100%" stop-color="#072b12"/>
+                </linearGradient>
+
+                <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#197a38"/>
+                    <stop offset="100%" stop-color="#0a3818"/>
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <div id="text-container">
+        <h1 class="text-content">To My Love 💝</h1>
+    </div>
+
+    <script>
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.getElementById('flowerSvg');
+        
+        let stems = [];
+        let branches = [];
+        let leaves = [];
+        let petals = [];
+
+        function initDesign() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const isMobile = w < 768;
+
+            const startX = w + 50;
+            const startY = h + 100;
+
+            const flowersData = [
+                {
+                    targetX: isMobile ? w * 0.6 : w * 0.65,
+                    targetY: isMobile ? h * 0.65 : h * 0.55,
+                    cp1X: w * 0.9, cp1Y: h * 1.0,
+                    cp2X: w * 0.7, cp2Y: h * 0.7,
+                    petalCount: 45,
+                    scale: isMobile ? 1.2 : 1.6,
+                    delayOffset: 2.8,
+                    leafPositions: [0.3, 0.6, 0.85]
+                },
+                {
+                    targetX: isMobile ? w * 0.8 : w * 0.85,
+                    targetY: isMobile ? h * 0.4 : h * 0.3,
+                    cp1X: w * 1.0, cp1Y: h * 0.8,
+                    cp2X: w * 0.9, cp2Y: h * 0.5,
+                    petalCount: 30,
+                    scale: isMobile ? 0.8 : 1.1,
+                    delayOffset: 3.4,
+                    leafPositions: [0.45, 0.75]
+                }
+            ];
+
+            flowersData.forEach((data, index) => {
+                const stem = document.createElementNS(svgNS, "path");
+                const pathD = `M ${startX} ${startY} C ${data.cp1X} ${data.cp1Y}, ${data.cp2X} ${data.cp2Y}, ${data.targetX} ${data.targetY}`;
+                stem.setAttribute("d", pathD);
+                stem.setAttribute("class", "stem");
+                svg.appendChild(stem);
+
+                const length = stem.getTotalLength();
+                stem.style.strokeDasharray = length;
+                stem.style.strokeDashoffset = length; 
+                stems.push(stem);
+
+                data.leafPositions.forEach((posPct, i) => {
+                    const pt = stem.getPointAtLength(length * posPct);
+                    const angle = (i % 2 === 0 ? -40 : 40) + (Math.random() * 15 - 7.5);
+                    
+                    const branchContainer = document.createElementNS(svgNS, "g");
+                    branchContainer.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angle})`);
+                    
+                    const branchPath = document.createElementNS(svgNS, "path");
+                    branchPath.setAttribute("d", "M 0 0 Q 30 10, 50 0");
+                    branchPath.setAttribute("class", "branch");
+                    
+                    branchPath.style.strokeDasharray = "60";
+                    branchPath.style.strokeDashoffset = "60";
+                    const branchDelay = (posPct * 3.5) + 0.1;
+                    branchPath.style.transitionDelay = `${branchDelay}s`;
+                    
+                    const leafGroup = document.createElementNS(svgNS, "g");
+                    leafGroup.setAttribute("class", "leaf");
+                    leafGroup.style.setProperty('--x', `50px`);
+                    leafGroup.style.setProperty('--y', `0px`);
+                    leafGroup.style.setProperty('--rot', `60deg`); 
+                    leafGroup.style.transitionDelay = `${branchDelay + 0.7}s`;
+
+                    const leafPath = document.createElementNS(svgNS, "path");
+                    leafPath.setAttribute("d", "M 0 0 Q -25 30, 0 80 Q 25 30, 0 0");
+                    leafPath.setAttribute("fill", "url(#leafGrad)");
+                    leafPath.setAttribute("filter", "url(#drop-shadow)");
+
+                    leafGroup.appendChild(leafPath);
+                    branchContainer.appendChild(branchPath);
+                    branchContainer.appendChild(leafGroup);
+                    
+                    svg.appendChild(branchContainer);
+                    branches.push(branchPath);
+                    leaves.push(leafGroup);
+                });
+
+                const flowerGroup = document.createElementNS(svgNS, "g");
+                flowerGroup.setAttribute("transform", `translate(${data.targetX}, ${data.targetY})`);
+                svg.appendChild(flowerGroup);
+
+                const base = document.createElementNS(svgNS, "circle");
+                base.setAttribute("r", 15 * data.scale);
+                base.setAttribute("fill", "#072b12");
+                base.setAttribute("class", "petal");
+                base.style.setProperty('--rot', `0deg`);
+                base.style.setProperty('--scl', `1`);
+                base.style.transitionDelay = `${data.delayOffset}s`;
+                flowerGroup.appendChild(base);
+                petals.push(base);
+
+                for (let i = 0; i < data.petalCount; i++) {
+                    const angle = i * 137.5; 
+                    const scale = (1 - (i / data.petalCount) * 0.8) * data.scale;
+                    const hue = 335 + (i / data.petalCount) * 15;
+                    const lightness = 20 + (i / data.petalCount) * 45; 
+                    
+                    const petal = document.createElementNS(svgNS, "path");
+                    petal.setAttribute("d", "M 0 0 C -40 -50, -60 -110, 0 -130 C 60 -110, 40 -50, 0 0");
+                    petal.setAttribute("fill", `hsl(${hue}, 100%, ${lightness}%)`);
+                    petal.setAttribute("filter", "url(#drop-shadow)");
+                    petal.setAttribute("class", "petal");
+
+                    petal.style.setProperty('--rot', `${angle}deg`);
+                    petal.style.setProperty('--scl', scale);
+                    petal.style.transitionDelay = `${data.delayOffset + (i * 0.08)}s`;
+
+                    flowerGroup.appendChild(petal);
+                    petals.push(petal);
+                }
+            });
+
+            for(let i = 0; i < 40; i++) {
+                const particle = document.createElementNS(svgNS, "circle");
+                particle.setAttribute("cx", Math.random() * w);
+                particle.setAttribute("cy", h + 50);
+                particle.setAttribute("r", Math.random() * 2.5 + 0.5);
+                particle.setAttribute("class", "particle");
+                
+                particle.style.setProperty('--duration', `${8 + Math.random() * 10}s`);
+                particle.style.setProperty('--delay', `${Math.random() * 10}s`);
+                
+                svg.appendChild(particle);
+            }
+        }
+
+        function triggerAnimationSequence() {
+            setTimeout(() => {
+                // 1. Grow main stems
+                stems.forEach(stem => stem.classList.add('grow'));
+                // 2. Grow branches
+                branches.forEach(branch => branch.classList.add('grow'));
+                // 3. Bloom leaves
+                leaves.forEach(leaf => leaf.classList.add('bloom'));
+                // 4. Bloom petals
+                petals.forEach(petal => petal.classList.add('bloom'));
+            }, 100);
+
+            setTimeout(() => {
+                const text = document.getElementById('text-container');
+                text.classList.add('text-visible');
+            }, 6800);
+        }
+
+        window.addEventListener('load', () => {
+            initDesign();
+            requestAnimationFrame(() => {
+                triggerAnimationSequence();
+            });
+        });
+    </script>
+</body>
+</html>

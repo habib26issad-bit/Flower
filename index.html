@@ -34,6 +34,18 @@
             pointer-events: none;
         }
 
+        #flowerSvg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            /* يبدأ مخفياً لتجنب الوميض */
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #flowerSvg.visible {
+            opacity: 1;
+        }
+
         /* ── Stem ─────────────────────────── */
         .stem {
             fill: none;
@@ -303,7 +315,7 @@
 <body>
 
     <div id="canvas-container">
-        <svg id="flowerSvg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <svg id="flowerSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
             <defs>
                 <!-- Petal soft glow -->
                 <filter id="petalGlow" x="-45%" y="-45%" width="190%" height="190%">
@@ -366,9 +378,9 @@
         (function() {
             const svgNS = "http://www.w3.org/2000/svg";
             const svg = document.getElementById('flowerSvg');
+            const container = document.getElementById('canvas-container');
             const textContainer = document.getElementById('text-container');
 
-            // Tracked elements
             let stems = [];
             let branches = [];
             let leaves = [];
@@ -382,10 +394,22 @@
 
             let animationStarted = false;
             let animTimeouts = [];
+            let isInitialized = false;
+            let pendingResolve = null;
 
             function clearAllTimeouts() {
                 animTimeouts.forEach(t => clearTimeout(t));
                 animTimeouts = [];
+            }
+
+            function setSVGDimensions() {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+                svg.setAttribute('width', w);
+                svg.setAttribute('height', h);
+                container.style.width = w + 'px';
+                container.style.height = h + 'px';
             }
 
             function clearSVG() {
@@ -410,7 +434,13 @@
                 });
 
                 textContainer.classList.remove('text-visible');
+                svg.classList.remove('visible');
                 animationStarted = false;
+                isInitialized = false;
+                if (pendingResolve) {
+                    cancelAnimationFrame(pendingResolve);
+                    pendingResolve = null;
+                }
             }
 
             function createBokehBackground(w, h) {
@@ -514,16 +544,13 @@
                     particle.setAttribute('class', 'particle');
                     particle.style.setProperty('--duration', `${7 + Math.random() * 13}s`);
                     particle.style.setProperty('--delay', `${Math.random() * 11}s`);
-                    particle.setAttribute('fill', particleColors[Math.floor(Math.random() * particleColors
-                        .length)]);
+                    particle.setAttribute('fill', particleColors[Math.floor(Math.random() * particleColors.length)]);
                     svg.appendChild(particle);
                     allParticles.push(particle);
                 }
             }
 
-            function initDesign() {
-                clearSVG();
-
+            function buildScene() {
                 const w = window.innerWidth;
                 const h = window.innerHeight;
                 const isMobile = w < 768;
@@ -554,114 +581,42 @@
                 }];
 
                 const flowerPositions = flowersData.map(d => ({ x: d.targetX, y: d.targetY }));
+                return { w, h, startX, startY, flowersData, flowerPositions };
+            }
+
+            // تخزين بيانات الأغصان مؤقتاً حتى قياس طول الساق
+            let pendingBranches = [];
+
+            function createAllElements(sceneData) {
+                const { w, h, startX, startY, flowersData, flowerPositions } = sceneData;
 
                 createBokehBackground(w, h);
                 createLightRays(w, h, flowersData[0].targetX, flowersData[0].targetY - 25);
 
-                flowersData.forEach((data, flowerIndex) => {
-                    // ── Stem ──────────────────
+                pendingBranches = [];
+
+                flowersData.forEach((data) => {
                     const stem = document.createElementNS(svgNS, 'path');
                     const pathD =
                         `M ${startX} ${startY} C ${data.cp1X} ${data.cp1Y}, ${data.cp2X} ${data.cp2Y}, ${data.targetX} ${data.targetY}`;
                     stem.setAttribute('d', pathD);
                     stem.setAttribute('class', 'stem');
                     svg.appendChild(stem);
-
-                    const stemLength = stem.getTotalLength();
-                    stem.style.strokeDasharray = stemLength;
-                    stem.style.strokeDashoffset = stemLength;
                     stems.push(stem);
 
-                    // ── Branches & Leaves ─────
                     data.leafPositions.forEach((posPct, i) => {
-                        const pt = stem.getPointAtLength(stemLength * posPct);
-                        const baseAngle = (i % 2 === 0 ? -36 : 36) + (Math.random() * 14 - 7);
-
-                        // Outer group – fixed position on stem (NO animation on this group)
-                        const branchPositionGroup = document.createElementNS(svgNS, 'g');
-                        branchPositionGroup.setAttribute('transform',
-                            `translate(${pt.x}, ${pt.y}) rotate(${baseAngle})`);
-
-                        // Inner group for sway (CSS animation applied later)
-                        const branchInner = document.createElementNS(svgNS, 'g');
-                        branchInner.setAttribute('class', 'branch-inner');
-                        branchInnerGroups.push(branchInner);
-
-                        // Branch path – starts at (0,0) = stem attachment, extends outward
-                        const branchLen = 38 + Math.random() * 28;
-                        const branchPath = document.createElementNS(svgNS, 'path');
-                        // Simple outward curve (no dip back toward origin)
-                        branchPath.setAttribute('d',
-                            `M 0 0 Q ${branchLen * 0.5} ${-(branchLen * 0.15)}, ${branchLen} ${-(branchLen * 0.06)}`);
-                        branchPath.setAttribute('class', 'branch');
-                        branchPath.setAttribute('fill', 'none');
-                        branchInner.appendChild(branchPath);
-
-                        // Append to DOM before measuring length
-                        branchPositionGroup.appendChild(branchInner);
-                        svg.appendChild(branchPositionGroup);
-
-                        const brLen = branchPath.getTotalLength();
-                        branchPath.style.strokeDasharray = brLen;
-                        branchPath.style.strokeDashoffset = brLen;
-                        branches.push(branchPath);
-
-                        // Leaf group
-                        const leafGroup = document.createElementNS(svgNS, 'g');
-                        leafGroup.setAttribute('class', 'leaf');
-                        leafGroup.style.setProperty('--x', `${branchLen - 2}px`);
-                        leafGroup.style.setProperty('--y', `${-(branchLen * 0.06)}px`);
-                        leafGroup.style.setProperty('--rot', `${50 + Math.random() * 18}deg`);
-
-                        // Leaf shape
-                        const leafPath = document.createElementNS(svgNS, 'path');
-                        leafPath.setAttribute('d',
-                            'M 0 0 C -16 10, -24 44, 0 68 C 24 44, 16 10, 0 0');
-                        leafPath.setAttribute('fill',
-                            i % 3 === 0 ? 'url(#leafGradAlt)' : 'url(#leafGrad)');
-                        leafPath.setAttribute('filter', 'url(#leafShadow)');
-
-                        // Veins
-                        const vein = document.createElementNS(svgNS, 'line');
-                        vein.setAttribute('x1', '0');
-                        vein.setAttribute('y1', '1');
-                        vein.setAttribute('x2', '0');
-                        vein.setAttribute('y2', '62');
-                        vein.setAttribute('stroke', 'rgba(180,220,180,0.35)');
-                        vein.setAttribute('stroke-width', '1');
-                        vein.setAttribute('stroke-linecap', 'round');
-
-                        const veinGroup = document.createElementNS(svgNS, 'g');
-                        veinGroup.setAttribute('stroke', 'rgba(180,220,180,0.22)');
-                        veinGroup.setAttribute('stroke-width', '0.6');
-                        veinGroup.setAttribute('stroke-linecap', 'round');
-                        [
-                            [0, 16, -7, 11],
-                            [0, 28, -9, 5],
-                            [0, 42, -6, 3],
-                            [0, 16, 7, 11],
-                            [0, 28, 9, 5],
-                            [0, 42, 6, 3]
-                        ].forEach(([x1, y1, dx, dy]) => {
-                            const lv = document.createElementNS(svgNS, 'line');
-                            lv.setAttribute('x1', x1);
-                            lv.setAttribute('y1', y1);
-                            lv.setAttribute('x2', dx);
-                            lv.setAttribute('y2', y1 + dy);
-                            veinGroup.appendChild(lv);
+                        pendingBranches.push({
+                            stem,
+                            posPct,
+                            i,
+                            data,
+                            baseAngle: (i % 2 === 0 ? -36 : 36) + (Math.random() * 14 - 7),
+                            branchLen: 38 + Math.random() * 28,
                         });
-
-                        leafGroup.appendChild(leafPath);
-                        leafGroup.appendChild(vein);
-                        leafGroup.appendChild(veinGroup);
-                        branchInner.appendChild(leafGroup);
-                        leaves.push(leafGroup);
                     });
 
-                    // ── Flower ────────────────
                     const flowerPosGroup = document.createElementNS(svgNS, 'g');
-                    flowerPosGroup.setAttribute('transform',
-                        `translate(${data.targetX}, ${data.targetY})`);
+                    flowerPosGroup.setAttribute('transform', `translate(${data.targetX}, ${data.targetY})`);
                     svg.appendChild(flowerPosGroup);
 
                     const flowerInner = document.createElementNS(svgNS, 'g');
@@ -669,7 +624,6 @@
                     flowerPosGroup.appendChild(flowerInner);
                     flowerInnerGroups.push(flowerInner);
 
-                    // Receptacle
                     const base = document.createElementNS(svgNS, 'circle');
                     base.setAttribute('r', 10 * data.scale);
                     base.setAttribute('fill', '#0a1f12');
@@ -680,12 +634,10 @@
                     flowerInner.appendChild(base);
                     petals.push(base);
 
-                    // Petals – outer first (higher index) renders underneath
                     for (let idx = data.petalCount - 1; idx >= 0; idx--) {
                         const progress = idx / data.petalCount;
                         const angle = idx * 137.5;
                         const scale = (0.22 + progress * 0.78) * data.scale;
-
                         const hue = 340 + progress * 16;
                         const saturation = 80 + progress * 20;
                         const lightness = 38 - progress * 22;
@@ -704,14 +656,11 @@
 
                         const petal = document.createElementNS(svgNS, 'path');
                         petal.setAttribute('d', petalD);
-                        petal.setAttribute('fill',
-                            `hsl(${hue}, ${saturation}%, ${lightness}%)`);
-                        petal.setAttribute('filter',
-                            progress < 0.15 ? 'url(#petalGlowInner)' : 'url(#petalGlow)');
+                        petal.setAttribute('fill', `hsl(${hue}, ${saturation}%, ${lightness}%)`);
+                        petal.setAttribute('filter', progress < 0.15 ? 'url(#petalGlowInner)' : 'url(#petalGlow)');
                         petal.setAttribute('class', 'petal');
                         petal.style.setProperty('--rot', `${angle}deg`);
                         petal.style.setProperty('--scl', scale);
-
                         flowerInner.appendChild(petal);
                         petals.push(petal);
                     }
@@ -721,14 +670,86 @@
                 createParticles(w, h);
             }
 
-            function resetAllElements() {
-                // Temporarily disable ALL transitions to prevent
-                // the "wilting" animation when resetting dashoffset
-                const allAnimated = [...stems, ...branches, ...leaves, ...petals];
+            function resolveBranches() {
+                pendingBranches.forEach(bd => {
+                    const { stem, posPct, i, baseAngle, branchLen } = bd;
+                    const stemLength = stem.getTotalLength();
+                    const pt = stem.getPointAtLength(stemLength * posPct);
 
-                allAnimated.forEach(el => {
-                    el.style.transition = 'none';
+                    const branchPositionGroup = document.createElementNS(svgNS, 'g');
+                    branchPositionGroup.setAttribute('transform', `translate(${pt.x}, ${pt.y}) rotate(${baseAngle})`);
+
+                    const branchInner = document.createElementNS(svgNS, 'g');
+                    branchInner.setAttribute('class', 'branch-inner');
+                    branchInnerGroups.push(branchInner);
+
+                    const branchPath = document.createElementNS(svgNS, 'path');
+                    branchPath.setAttribute('d',
+                        `M 0 0 Q ${branchLen * 0.5} ${-(branchLen * 0.15)}, ${branchLen} ${-(branchLen * 0.06)}`);
+                    branchPath.setAttribute('class', 'branch');
+                    branchPath.setAttribute('fill', 'none');
+                    branchInner.appendChild(branchPath);
+
+                    branchPositionGroup.appendChild(branchInner);
+                    svg.appendChild(branchPositionGroup);
+
+                    const brLen = branchPath.getTotalLength();
+                    branchPath.style.strokeDasharray = brLen;
+                    branchPath.style.strokeDashoffset = brLen;
+                    branches.push(branchPath);
+
+                    const leafGroup = document.createElementNS(svgNS, 'g');
+                    leafGroup.setAttribute('class', 'leaf');
+                    leafGroup.style.setProperty('--x', `${branchLen - 2}px`);
+                    leafGroup.style.setProperty('--y', `${-(branchLen * 0.06)}px`);
+                    leafGroup.style.setProperty('--rot', `${50 + Math.random() * 18}deg`);
+
+                    const leafPath = document.createElementNS(svgNS, 'path');
+                    leafPath.setAttribute('d', 'M 0 0 C -16 10, -24 44, 0 68 C 24 44, 16 10, 0 0');
+                    leafPath.setAttribute('fill', i % 3 === 0 ? 'url(#leafGradAlt)' : 'url(#leafGrad)');
+                    leafPath.setAttribute('filter', 'url(#leafShadow)');
+
+                    const vein = document.createElementNS(svgNS, 'line');
+                    vein.setAttribute('x1', '0');
+                    vein.setAttribute('y1', '1');
+                    vein.setAttribute('x2', '0');
+                    vein.setAttribute('y2', '62');
+                    vein.setAttribute('stroke', 'rgba(180,220,180,0.35)');
+                    vein.setAttribute('stroke-width', '1');
+                    vein.setAttribute('stroke-linecap', 'round');
+
+                    const veinGroup = document.createElementNS(svgNS, 'g');
+                    veinGroup.setAttribute('stroke', 'rgba(180,220,180,0.22)');
+                    veinGroup.setAttribute('stroke-width', '0.6');
+                    veinGroup.setAttribute('stroke-linecap', 'round');
+                    [
+                        [0, 16, -7, 11],
+                        [0, 28, -9, 5],
+                        [0, 42, -6, 3],
+                        [0, 16, 7, 11],
+                        [0, 28, 9, 5],
+                        [0, 42, 6, 3]
+                    ].forEach(([x1, y1, dx, dy]) => {
+                        const lv = document.createElementNS(svgNS, 'line');
+                        lv.setAttribute('x1', x1);
+                        lv.setAttribute('y1', y1);
+                        lv.setAttribute('x2', dx);
+                        lv.setAttribute('y2', y1 + dy);
+                        veinGroup.appendChild(lv);
+                    });
+
+                    leafGroup.appendChild(leafPath);
+                    leafGroup.appendChild(vein);
+                    leafGroup.appendChild(veinGroup);
+                    branchInner.appendChild(leafGroup);
+                    leaves.push(leafGroup);
                 });
+                pendingBranches = [];
+            }
+
+            function resetAllElements() {
+                const allAnimated = [...stems, ...branches, ...leaves, ...petals];
+                allAnimated.forEach(el => (el.style.transition = 'none'));
 
                 stems.forEach(stem => {
                     stem.classList.remove('grow');
@@ -750,45 +771,34 @@
                 branchInnerGroups.forEach(g => g.classList.remove('swaying'));
                 textContainer.classList.remove('text-visible');
 
-                // Force reflow to apply the 'none' transition changes instantly
                 void svg.offsetHeight;
-
-                // Restore transitions (empty string = use CSS defaults)
-                allAnimated.forEach(el => {
-                    el.style.transition = '';
-                });
+                allAnimated.forEach(el => (el.style.transition = ''));
             }
 
             function triggerAnimationSequence() {
+                if (!isInitialized) return;
                 resetAllElements();
-
-                // Extra safety: force another reflow after restoring transitions
                 void svg.offsetHeight;
 
                 requestAnimationFrame(() => {
-                    // Phase 1: Stems grow (0ms, transition 2.5s)
                     stems.forEach(stem => stem.classList.add('grow'));
 
-                    // Phase 2: Branches + leaves (1000ms)
                     const t1 = setTimeout(() => {
                         branches.forEach(branch => branch.classList.add('grow'));
                         leaves.forEach(leaf => leaf.classList.add('bloom'));
                     }, 1000);
                     animTimeouts.push(t1);
 
-                    // Phase 3: Petals bloom (2500ms)
                     const t2 = setTimeout(() => {
                         petals.forEach(petal => petal.classList.add('bloom'));
                     }, 2500);
                     animTimeouts.push(t2);
 
-                    // Phase 4: Text appears (4000ms)
                     const t3 = setTimeout(() => {
                         textContainer.classList.add('text-visible');
                     }, 4000);
                     animTimeouts.push(t3);
 
-                    // Phase 5: Swaying starts (5500ms)
                     const t4 = setTimeout(() => {
                         flowerInnerGroups.forEach(g => g.classList.add('swaying'));
                         branchInnerGroups.forEach(g => g.classList.add('swaying'));
@@ -797,37 +807,80 @@
                 });
             }
 
+            function finalizeInit() {
+                resolveBranches();
+                stems.forEach(stem => {
+                    const len = stem.getTotalLength();
+                    stem.style.strokeDasharray = len;
+                    stem.style.strokeDashoffset = len;
+                });
+                isInitialized = true;
+                // الآن نُظهر الـ SVG لأنه جاهز
+                svg.classList.add('visible');
+                triggerAnimationSequence();
+            }
+
+            function initDesign() {
+                clearSVG();
+                setSVGDimensions();
+
+                const sceneData = buildScene();
+                createAllElements(sceneData);
+
+                // انتظار القياسات الصحيحة
+                if (pendingResolve) cancelAnimationFrame(pendingResolve);
+                function waitAndResolve() {
+                    pendingResolve = requestAnimationFrame(() => {
+                        pendingResolve = requestAnimationFrame(() => {
+                            pendingResolve = requestAnimationFrame(() => {
+                                pendingResolve = null;
+                                finalizeInit();
+                            });
+                        });
+                    });
+                }
+                waitAndResolve();
+            }
+
             function startAnimation() {
                 if (animationStarted) return;
                 animationStarted = true;
                 initDesign();
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        triggerAnimationSequence();
-                    });
-                });
             }
 
-            // ── Entry points ────────────────────
-            if (document.readyState === 'complete') {
+            function bootAnimation() {
+                animationStarted = false;
+                isInitialized = false;
+                clearSVG();
                 startAnimation();
-            } else {
-                window.addEventListener('load', startAnimation, { once: true });
             }
 
-            // bfcache support
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(bootAnimation, 50);
+            } else {
+                document.addEventListener('DOMContentLoaded', () => setTimeout(bootAnimation, 50), { once: true });
+            }
+
+            window.addEventListener('load', () => {
+                if (!animationStarted) bootAnimation();
+            }, { once: true });
+
             window.addEventListener('pageshow', (event) => {
                 if (event.persisted) {
-                    animationStarted = false;
-                    clearSVG();
-                    startAnimation();
+                    bootAnimation();
                 }
             });
 
-            // Clean up when page is frozen
+            if (window.self !== window.top) {
+                setTimeout(() => {
+                    if (!animationStarted) bootAnimation();
+                }, 200);
+            }
+
             window.addEventListener('pagehide', () => {
                 clearAllTimeouts();
                 animationStarted = false;
+                isInitialized = false;
             });
         })();
     </script>

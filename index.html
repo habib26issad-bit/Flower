@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,8 @@
             --bg-edge: #0d0106;
         }
 
-        body, html {
+        body,
+        html {
             margin: 0;
             padding: 0;
             width: 100%;
@@ -19,6 +21,7 @@
             background: radial-gradient(circle at center, var(--bg-center) 0%, var(--bg-edge) 100%);
             overflow: hidden;
             font-family: 'Great Vibes', cursive, 'Georgia', serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         #canvas-container {
@@ -31,140 +34,251 @@
             pointer-events: none;
         }
 
+        /* ── Stem ─────────────────────────── */
         .stem {
             fill: none;
             stroke: url(#stemGrad);
             stroke-width: 12;
             stroke-linecap: round;
-            transition: stroke-dashoffset 3.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: stroke-dashoffset 2.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stem.grow {
             stroke-dashoffset: 0 !important;
         }
 
+        /* ── Branch ───────────────────────── */
         .branch {
             fill: none;
             stroke: url(#stemGrad);
-            stroke-width: 6;
+            stroke-width: 5;
             stroke-linecap: round;
-            transition: stroke-dashoffset 1.2s ease-out;
+            transition: stroke-dashoffset 0.9s ease-out;
         }
         .branch.grow {
             stroke-dashoffset: 0 !important;
         }
 
+        /* ── Leaf ─────────────────────────── */
         .leaf {
             transform: translate(var(--x), var(--y)) rotate(var(--rot)) scale(0);
             transform-origin: 0px 0px;
             opacity: 0;
-            transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 1.5s ease-out;
+            transition: transform 1.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 1.1s ease-out;
         }
         .leaf.bloom {
             transform: translate(var(--x), var(--y)) rotate(var(--rot)) scale(1);
             opacity: 1;
         }
 
+        /* ── Petal ────────────────────────── */
         .petal {
             transform: rotate(var(--rot)) scale(0);
             transform-origin: 0px 0px;
             opacity: 0;
-            transition: transform 2.5s cubic-bezier(0.25, 1, 0.3, 1.2), opacity 2s ease-in-out;
+            transition: transform 2.4s cubic-bezier(0.25, 1, 0.3, 1.2), opacity 1.8s ease-in-out;
         }
         .petal.bloom {
             transform: rotate(var(--rot)) scale(var(--scl));
             opacity: 1;
         }
 
+        /* ── Flower inner sway ────────────── */
+        .flower-inner {
+            animation: none;
+        }
+        .flower-inner.swaying {
+            animation: swayFlower 5.5s ease-in-out infinite;
+        }
+        @keyframes swayFlower {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            20% {
+                transform: translateY(-5px) rotate(1.3deg);
+            }
+            40% {
+                transform: translateY(-2px) rotate(-0.6deg);
+            }
+            60% {
+                transform: translateY(-7px) rotate(-1.5deg);
+            }
+            80% {
+                transform: translateY(-1px) rotate(0.9deg);
+            }
+        }
+
+        /* ── Branch inner sway ────────────── */
+        .branch-inner {
+            animation: none;
+        }
+        .branch-inner.swaying {
+            animation: swayBranch 5.8s ease-in-out infinite;
+        }
+        @keyframes swayBranch {
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(2.2deg);
+            }
+            50% {
+                transform: rotate(-0.5deg);
+            }
+            75% {
+                transform: rotate(-1.8deg);
+            }
+        }
+
+        /* ── Text ─────────────────────────── */
         #text-container {
-    position: absolute;
-    z-index: 10;
-    top: 50%;
-    left: 15%;
-    margin-top: -5vh; 
-    transform: translateY(30px);
-    opacity: 0;
-    transition: opacity 4s ease-in-out, transform 4s ease-out;
-    pointer-events: none;
-}
-
-#text-container.text-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.text-content {
-    font-size: clamp(4rem, 8vw, 8rem);
-    color: #ffb3c6;
-    margin: 0;
-    text-shadow: 0 0 10px rgba(255, 51, 102, 0.5), 
-                 0 0 20px rgba(255, 51, 102, 0.5), 
-                 0 0 40px rgba(255, 0, 85, 0.8);
-    will-change: transform, text-shadow; 
-}
-
-#text-container.text-visible .text-content {
-    animation: 
-        floatSmooth 4s ease-in-out infinite alternate, 
-        pulseGlow 3s ease-in-out infinite alternate;
-}
-
-@keyframes floatSmooth {
-    0% { transform: translateY(0px); }
-    100% { transform: translateY(-15px); }
-}
-
-@keyframes pulseGlow {
-    0% { text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 25px rgba(255, 51, 102, 0.6), 0 0 45px rgba(255, 0, 85, 0.8); }
-    100% { text-shadow: 0 0 15px rgba(255, 102, 153, 0.9), 0 0 35px rgba(255, 51, 102, 0.9), 0 0 65px rgba(255, 0, 85, 1); }
-}
-
-@media (max-width: 768px) {
-    #text-container {
-        left: 0;
-        width: 100%;
-        text-align: center;
-        top: 20%;
-        transform: translateY(20px);
-    }
-    #text-container.text-visible {
-        transform: translateY(0);
-    }
-}
-
+            position: absolute;
+            z-index: 10;
+            top: 50%;
+            left: 15%;
+            margin-top: -5vh;
+            transform: translateY(30px);
+            opacity: 0;
+            transition: opacity 3s ease-in-out, transform 3s ease-out;
+            pointer-events: none;
+        }
         #text-container.text-visible {
             opacity: 1;
-            transform: translateY(-50%) translateY(0);
-            animation: float 4s ease-in-out infinite alternate 4s;
+            transform: translateY(0);
         }
-
+        .text-content {
+            font-size: clamp(4rem, 8vw, 8rem);
+            color: #ffb3c6;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.5),
+                0 0 20px rgba(255, 51, 102, 0.5),
+                0 0 40px rgba(255, 0, 85, 0.8);
+            will-change: transform, text-shadow;
+        }
         #text-container.text-visible .text-content {
-            animation: pulseGlow 3s ease-in-out infinite alternate;
+            animation: floatSmooth 4s ease-in-out infinite alternate,
+                pulseGlow 3s ease-in-out infinite alternate;
         }
-
-        @keyframes float {
-            0% { transform: translateY(-50%) translateY(0px); }
-            100% { transform: translateY(-50%) translateY(-15px); }
+        @keyframes floatSmooth {
+            0% {
+                transform: translateY(0px);
+            }
+            100% {
+                transform: translateY(-15px);
+            }
         }
-
         @keyframes pulseGlow {
-            0% { text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 25px rgba(255, 51, 102, 0.6), 0 0 45px rgba(255, 0, 85, 0.8); }
-            100% { text-shadow: 0 0 15px rgba(255, 102, 153, 0.9), 0 0 35px rgba(255, 51, 102, 0.9), 0 0 65px rgba(255, 0, 85, 1); }
+            0% {
+                text-shadow: 0 0 10px rgba(255, 51, 102, 0.6), 0 0 25px rgba(255, 51, 102, 0.6), 0 0 45px rgba(255, 0, 85, 0.8);
+            }
+            100% {
+                text-shadow: 0 0 15px rgba(255, 102, 153, 0.9), 0 0 35px rgba(255, 51, 102, 0.9), 0 0 65px rgba(255, 0, 85, 1);
+            }
         }
 
+        /* ── Particles ────────────────────── */
         .particle {
             fill: #ffb3c6;
             opacity: 0;
             animation: drift var(--duration) linear infinite;
             animation-delay: var(--delay);
         }
-
         @keyframes drift {
-            0% { transform: translateY(0) scale(0); opacity: 0; }
-            20% { opacity: 0.6; transform: translateY(-20vh) scale(1); }
-            80% { opacity: 0.6; transform: translateY(-80vh) scale(1); }
-            100% { transform: translateY(-100vh) scale(0); opacity: 0; }
+            0% {
+                transform: translateY(0) scale(0);
+                opacity: 0;
+            }
+            15% {
+                opacity: 0.5;
+                transform: translateY(-15vh) scale(1);
+            }
+            70% {
+                opacity: 0.5;
+                transform: translateY(-75vh) scale(1);
+            }
+            100% {
+                transform: translateY(-100vh) scale(0);
+                opacity: 0;
+            }
         }
 
+        /* ── Sparkles ─────────────────────── */
+        .sparkle {
+            fill: #ffe0b2;
+            opacity: 0;
+            animation: twinkle var(--spark-dur) ease-in-out infinite;
+            animation-delay: var(--spark-delay);
+        }
+        @keyframes twinkle {
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            30% {
+                opacity: 0.9;
+                transform: scale(1.3);
+            }
+            60% {
+                opacity: 0.15;
+                transform: scale(0.7);
+            }
+            85% {
+                opacity: 0.75;
+                transform: scale(1.1);
+            }
+        }
+
+        /* ── Bokeh ────────────────────────── */
+        .bokeh-circle {
+            animation: bokehDrift var(--bok-dur) ease-in-out infinite;
+            animation-delay: var(--bok-delay);
+            opacity: 0;
+        }
+        @keyframes bokehDrift {
+            0% {
+                opacity: 0;
+                transform: translateY(0) translateX(0) scale(0.8);
+            }
+            20% {
+                opacity: var(--bok-opacity);
+            }
+            50% {
+                transform: translateY(var(--bok-dy)) translateX(var(--bok-dx)) scale(1.1);
+            }
+            80% {
+                opacity: var(--bok-opacity);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(0) translateX(0) scale(0.8);
+            }
+        }
+
+        /* ── Light rays ───────────────────── */
+        .light-ray {
+            animation: rayPulse 7s ease-in-out infinite;
+            animation-delay: var(--ray-delay);
+            opacity: 0;
+        }
+        @keyframes rayPulse {
+            0%,
+            100% {
+                opacity: 0.02;
+            }
+            40% {
+                opacity: 0.07;
+            }
+            60% {
+                opacity: 0.04;
+            }
+            80% {
+                opacity: 0.08;
+            }
+        }
+
+        /* ── Mobile ───────────────────────── */
         @media (max-width: 768px) {
             #text-container {
                 left: 0;
@@ -176,31 +290,69 @@
             #text-container.text-visible {
                 transform: translateY(0);
             }
-            @keyframes float {
-                0% { transform: translateY(0px); }
-                100% { transform: translateY(-15px); }
+            .stem {
+                stroke-width: 8;
+            }
+            .branch {
+                stroke-width: 3.5;
             }
         }
     </style>
 </head>
+
 <body>
 
     <div id="canvas-container">
         <svg id="flowerSvg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <filter id="drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity="0.6"/>
+                <!-- Petal soft glow -->
+                <filter id="petalGlow" x="-45%" y="-45%" width="190%" height="190%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2.8" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
                 </filter>
-
+                <!-- Stronger inner glow -->
+                <filter id="petalGlowInner" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3.8" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Leaf shadow -->
+                <filter id="leafShadow" x="-35%" y="-35%" width="170%" height="170%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#021005" flood-opacity="0.65" />
+                </filter>
+                <!-- Petal shadow -->
+                <filter id="petalShadow" x="-35%" y="-35%" width="170%" height="170%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="4.5" flood-color="#1a0008" flood-opacity="0.5" />
+                </filter>
+                <!-- Bokeh blur -->
+                <filter id="bokehBlur">
+                    <feGaussianBlur stdDeviation="20" />
+                </filter>
+                <filter id="bokehBlurSmall">
+                    <feGaussianBlur stdDeviation="9" />
+                </filter>
+                <!-- Stem gradient -->
                 <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#072b12"/>
-                    <stop offset="50%" stop-color="#146b30"/>
-                    <stop offset="100%" stop-color="#072b12"/>
+                    <stop offset="0%" stop-color="#072b12" />
+                    <stop offset="35%" stop-color="#1a5c2a" />
+                    <stop offset="65%" stop-color="#146b30" />
+                    <stop offset="100%" stop-color="#072b12" />
                 </linearGradient>
-
+                <!-- Leaf gradients -->
                 <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#197a38"/>
-                    <stop offset="100%" stop-color="#0a3818"/>
+                    <stop offset="0%" stop-color="#1a7a38" />
+                    <stop offset="45%" stop-color="#145c28" />
+                    <stop offset="100%" stop-color="#0a3016" />
+                </linearGradient>
+                <linearGradient id="leafGradAlt" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#1d8a3e" />
+                    <stop offset="50%" stop-color="#15662c" />
+                    <stop offset="100%" stop-color="#0b3818" />
                 </linearGradient>
             </defs>
         </svg>
@@ -211,167 +363,474 @@
     </div>
 
     <script>
-        const svgNS = "http://www.w3.org/2000/svg";
-        const svg = document.getElementById('flowerSvg');
-        
-        let stems = [];
-        let branches = [];
-        let leaves = [];
-        let petals = [];
+        (function() {
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.getElementById('flowerSvg');
+            const textContainer = document.getElementById('text-container');
 
-        function initDesign() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            const isMobile = w < 768;
+            // Tracked elements
+            let stems = [];
+            let branches = [];
+            let leaves = [];
+            let petals = [];
+            let flowerInnerGroups = [];
+            let branchInnerGroups = [];
+            let sparkles = [];
+            let bokehCircles = [];
+            let lightRays = [];
+            let allParticles = [];
 
-            const startX = w + 50;
-            const startY = h + 100;
+            let animationStarted = false;
+            let animTimeouts = [];
 
-            const flowersData = [
-                {
-                    targetX: isMobile ? w * 0.6 : w * 0.65,
-                    targetY: isMobile ? h * 0.65 : h * 0.55,
-                    cp1X: w * 0.9, cp1Y: h * 1.0,
-                    cp2X: w * 0.7, cp2Y: h * 0.7,
-                    petalCount: 45,
-                    scale: isMobile ? 1.2 : 1.6,
-                    delayOffset: 2.8,
-                    leafPositions: [0.3, 0.6, 0.85]
-                },
-                {
-                    targetX: isMobile ? w * 0.8 : w * 0.85,
-                    targetY: isMobile ? h * 0.4 : h * 0.3,
-                    cp1X: w * 1.0, cp1Y: h * 0.8,
-                    cp2X: w * 0.9, cp2Y: h * 0.5,
-                    petalCount: 30,
-                    scale: isMobile ? 0.8 : 1.1,
-                    delayOffset: 3.4,
-                    leafPositions: [0.45, 0.75]
-                }
-            ];
+            function clearAllTimeouts() {
+                animTimeouts.forEach(t => clearTimeout(t));
+                animTimeouts = [];
+            }
 
-            flowersData.forEach((data, index) => {
-                const stem = document.createElementNS(svgNS, "path");
-                const pathD = `M ${startX} ${startY} C ${data.cp1X} ${data.cp1Y}, ${data.cp2X} ${data.cp2Y}, ${data.targetX} ${data.targetY}`;
-                stem.setAttribute("d", pathD);
-                stem.setAttribute("class", "stem");
-                svg.appendChild(stem);
+            function clearSVG() {
+                clearAllTimeouts();
+                stems = [];
+                branches = [];
+                leaves = [];
+                petals = [];
+                flowerInnerGroups = [];
+                branchInnerGroups = [];
+                sparkles = [];
+                bokehCircles = [];
+                lightRays = [];
+                allParticles = [];
 
-                const length = stem.getTotalLength();
-                stem.style.strokeDasharray = length;
-                stem.style.strokeDashoffset = length; 
-                stems.push(stem);
-
-                data.leafPositions.forEach((posPct, i) => {
-                    const pt = stem.getPointAtLength(length * posPct);
-                    const angle = (i % 2 === 0 ? -40 : 40) + (Math.random() * 15 - 7.5);
-                    
-                    const branchContainer = document.createElementNS(svgNS, "g");
-                    branchContainer.setAttribute("transform", `translate(${pt.x}, ${pt.y}) rotate(${angle})`);
-                    
-                    const branchPath = document.createElementNS(svgNS, "path");
-                    branchPath.setAttribute("d", "M 0 0 Q 30 10, 50 0");
-                    branchPath.setAttribute("class", "branch");
-                    
-                    branchPath.style.strokeDasharray = "60";
-                    branchPath.style.strokeDashoffset = "60";
-                    const branchDelay = (posPct * 3.5) + 0.1;
-                    branchPath.style.transitionDelay = `${branchDelay}s`;
-                    
-                    const leafGroup = document.createElementNS(svgNS, "g");
-                    leafGroup.setAttribute("class", "leaf");
-                    leafGroup.style.setProperty('--x', `50px`);
-                    leafGroup.style.setProperty('--y', `0px`);
-                    leafGroup.style.setProperty('--rot', `60deg`); 
-                    leafGroup.style.transitionDelay = `${branchDelay + 0.7}s`;
-
-                    const leafPath = document.createElementNS(svgNS, "path");
-                    leafPath.setAttribute("d", "M 0 0 Q -25 30, 0 80 Q 25 30, 0 0");
-                    leafPath.setAttribute("fill", "url(#leafGrad)");
-                    leafPath.setAttribute("filter", "url(#drop-shadow)");
-
-                    leafGroup.appendChild(leafPath);
-                    branchContainer.appendChild(branchPath);
-                    branchContainer.appendChild(leafGroup);
-                    
-                    svg.appendChild(branchContainer);
-                    branches.push(branchPath);
-                    leaves.push(leafGroup);
+                const defs = svg.querySelector('defs');
+                const children = Array.from(svg.children);
+                children.forEach(child => {
+                    if (child !== defs) {
+                        svg.removeChild(child);
+                    }
                 });
 
-                const flowerGroup = document.createElementNS(svgNS, "g");
-                flowerGroup.setAttribute("transform", `translate(${data.targetX}, ${data.targetY})`);
-                svg.appendChild(flowerGroup);
+                textContainer.classList.remove('text-visible');
+                animationStarted = false;
+            }
 
-                const base = document.createElementNS(svgNS, "circle");
-                base.setAttribute("r", 15 * data.scale);
-                base.setAttribute("fill", "#072b12");
-                base.setAttribute("class", "petal");
-                base.style.setProperty('--rot', `0deg`);
-                base.style.setProperty('--scl', `1`);
-                base.style.transitionDelay = `${data.delayOffset}s`;
-                flowerGroup.appendChild(base);
-                petals.push(base);
+            function createBokehBackground(w, h) {
+                const colors = [
+                    'rgba(255,180,150,0.11)',
+                    'rgba(255,200,170,0.08)',
+                    'rgba(255,160,140,0.10)',
+                    'rgba(255,220,190,0.07)',
+                    'rgba(255,180,160,0.10)',
+                    'rgba(255,150,130,0.08)',
+                    'rgba(255,200,180,0.09)',
+                    'rgba(255,170,145,0.08)',
+                ];
+                for (let i = 0; i < 16; i++) {
+                    const circle = document.createElementNS(svgNS, 'circle');
+                    const cx = Math.random() * w;
+                    const cy = Math.random() * h * 0.85;
+                    const r = 20 + Math.random() * 100;
+                    circle.setAttribute('cx', cx);
+                    circle.setAttribute('cy', cy);
+                    circle.setAttribute('r', r);
+                    circle.setAttribute('fill', colors[i % colors.length]);
+                    circle.setAttribute('filter', r > 50 ? 'url(#bokehBlur)' : 'url(#bokehBlurSmall)');
+                    circle.setAttribute('class', 'bokeh-circle');
+                    circle.style.setProperty('--bok-dur', `${7 + Math.random() * 14}s`);
+                    circle.style.setProperty('--bok-delay', `${Math.random() * 7}s`);
+                    circle.style.setProperty('--bok-opacity', `${0.25 + Math.random() * 0.5}`);
+                    circle.style.setProperty('--bok-dy', `${-25 - Math.random() * 70}px`);
+                    circle.style.setProperty('--bok-dx', `${(Math.random() - 0.5) * 50}px`);
+                    svg.appendChild(circle);
+                    bokehCircles.push(circle);
+                }
+            }
 
-                for (let i = 0; i < data.petalCount; i++) {
-                    const angle = i * 137.5; 
-                    const scale = (1 - (i / data.petalCount) * 0.8) * data.scale;
-                    const hue = 335 + (i / data.petalCount) * 15;
-                    const lightness = 20 + (i / data.petalCount) * 45; 
-                    
-                    const petal = document.createElementNS(svgNS, "path");
-                    petal.setAttribute("d", "M 0 0 C -40 -50, -60 -110, 0 -130 C 60 -110, 40 -50, 0 0");
-                    petal.setAttribute("fill", `hsl(${hue}, 100%, ${lightness}%)`);
-                    petal.setAttribute("filter", "url(#drop-shadow)");
-                    petal.setAttribute("class", "petal");
+            function createLightRays(w, h, centerX, centerY) {
+                for (let i = 0; i < 7; i++) {
+                    const angle = -35 + i * 22 + (Math.random() - 0.5) * 18;
+                    const rad = angle * Math.PI / 180;
+                    const length = 280 + Math.random() * 420;
+                    const rayGroup = document.createElementNS(svgNS, 'g');
+                    rayGroup.setAttribute('class', 'light-ray');
+                    rayGroup.style.setProperty('--ray-delay', `${i * 1.1}s`);
 
-                    petal.style.setProperty('--rot', `${angle}deg`);
-                    petal.style.setProperty('--scl', scale);
-                    petal.style.transitionDelay = `${data.delayOffset + (i * 0.08)}s`;
+                    const x1 = centerX;
+                    const y1 = centerY;
+                    const x2 = x1 + Math.cos(rad) * length;
+                    const y2 = y1 + Math.sin(rad) * length;
+                    const spread = 12 + Math.random() * 28;
 
-                    flowerGroup.appendChild(petal);
-                    petals.push(petal);
+                    const px1 = x1 + Math.cos(rad + 0.07) * spread;
+                    const py1 = y1 + Math.sin(rad + 0.07) * spread;
+                    const px2 = x1 + Math.cos(rad - 0.07) * spread;
+                    const py2 = y1 + Math.sin(rad - 0.07) * spread;
+                    const px3 = x2 + Math.cos(rad - 0.035) * spread * 2.5;
+                    const py3 = y2 + Math.sin(rad - 0.035) * spread * 2.5;
+                    const px4 = x2 + Math.cos(rad + 0.035) * spread * 2.5;
+                    const py4 = y2 + Math.sin(rad + 0.035) * spread * 2.5;
+
+                    const polygon = document.createElementNS(svgNS, 'polygon');
+                    polygon.setAttribute('points', `${px1},${py1} ${px2},${py2} ${px3},${py3} ${px4},${py4}`);
+                    polygon.setAttribute('fill', 'rgba(255,195,165,0.055)');
+                    polygon.setAttribute('filter', 'url(#bokehBlur)');
+                    rayGroup.appendChild(polygon);
+                    svg.appendChild(rayGroup);
+                    lightRays.push(rayGroup);
+                }
+            }
+
+            function createSparkles(w, h, flowerPositions) {
+                flowerPositions.forEach((pos, fi) => {
+                    const count = fi === 0 ? 22 : 14;
+                    for (let i = 0; i < count; i++) {
+                        const sparkle = document.createElementNS(svgNS, 'circle');
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 35 + Math.random() * 130;
+                        const cx = pos.x + Math.cos(angle) * dist;
+                        const cy = pos.y + Math.sin(angle) * dist;
+                        const r = 1 + Math.random() * 3.2;
+                        sparkle.setAttribute('cx', cx);
+                        sparkle.setAttribute('cy', cy);
+                        sparkle.setAttribute('r', r);
+                        sparkle.setAttribute('fill', r > 2.2 ? '#fff8e1' : '#ffe0b2');
+                        sparkle.setAttribute('filter', 'url(#petalGlow)');
+                        sparkle.setAttribute('class', 'sparkle');
+                        sparkle.style.setProperty('--spark-dur', `${2.2 + Math.random() * 4.5}s`);
+                        sparkle.style.setProperty('--spark-delay', `${4.8 + Math.random() * 3.5}s`);
+                        svg.appendChild(sparkle);
+                        sparkles.push(sparkle);
+                    }
+                });
+            }
+
+            function createParticles(w, h) {
+                const count = 38;
+                const particleColors = ['#ffb3c6', '#ffd1dc', '#ffe0ec', '#ffc2d1', '#fff0f5', '#ffccd5'];
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElementNS(svgNS, 'circle');
+                    particle.setAttribute('cx', Math.random() * w);
+                    particle.setAttribute('cy', h + 25 + Math.random() * 90);
+                    particle.setAttribute('r', Math.random() * 2.8 + 0.4);
+                    particle.setAttribute('class', 'particle');
+                    particle.style.setProperty('--duration', `${7 + Math.random() * 13}s`);
+                    particle.style.setProperty('--delay', `${Math.random() * 11}s`);
+                    particle.setAttribute('fill', particleColors[Math.floor(Math.random() * particleColors
+                        .length)]);
+                    svg.appendChild(particle);
+                    allParticles.push(particle);
+                }
+            }
+
+            function initDesign() {
+                clearSVG();
+
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                const isMobile = w < 768;
+
+                const startX = w + 50;
+                const startY = h + 100;
+
+                const flowersData = [{
+                    targetX: isMobile ? w * 0.6 : w * 0.65,
+                    targetY: isMobile ? h * 0.65 : h * 0.55,
+                    cp1X: w * 0.9,
+                    cp1Y: h * 1.0,
+                    cp2X: w * 0.7,
+                    cp2Y: h * 0.7,
+                    petalCount: isMobile ? 26 : 38,
+                    scale: isMobile ? 1.2 : 1.55,
+                    leafPositions: [0.22, 0.48, 0.76]
+                }, {
+                    targetX: isMobile ? w * 0.8 : w * 0.85,
+                    targetY: isMobile ? h * 0.42 : h * 0.32,
+                    cp1X: w * 1.0,
+                    cp1Y: h * 0.8,
+                    cp2X: w * 0.9,
+                    cp2Y: h * 0.5,
+                    petalCount: isMobile ? 20 : 28,
+                    scale: isMobile ? 0.8 : 1.1,
+                    leafPositions: [0.38, 0.7]
+                }];
+
+                const flowerPositions = flowersData.map(d => ({ x: d.targetX, y: d.targetY }));
+
+                createBokehBackground(w, h);
+                createLightRays(w, h, flowersData[0].targetX, flowersData[0].targetY - 25);
+
+                flowersData.forEach((data, flowerIndex) => {
+                    // ── Stem ──────────────────
+                    const stem = document.createElementNS(svgNS, 'path');
+                    const pathD =
+                        `M ${startX} ${startY} C ${data.cp1X} ${data.cp1Y}, ${data.cp2X} ${data.cp2Y}, ${data.targetX} ${data.targetY}`;
+                    stem.setAttribute('d', pathD);
+                    stem.setAttribute('class', 'stem');
+                    svg.appendChild(stem);
+
+                    const stemLength = stem.getTotalLength();
+                    stem.style.strokeDasharray = stemLength;
+                    stem.style.strokeDashoffset = stemLength;
+                    stems.push(stem);
+
+                    // ── Branches & Leaves ─────
+                    data.leafPositions.forEach((posPct, i) => {
+                        const pt = stem.getPointAtLength(stemLength * posPct);
+                        const baseAngle = (i % 2 === 0 ? -36 : 36) + (Math.random() * 14 - 7);
+
+                        // Outer group – fixed position on stem (NO animation on this group)
+                        const branchPositionGroup = document.createElementNS(svgNS, 'g');
+                        branchPositionGroup.setAttribute('transform',
+                            `translate(${pt.x}, ${pt.y}) rotate(${baseAngle})`);
+
+                        // Inner group for sway (CSS animation applied later)
+                        const branchInner = document.createElementNS(svgNS, 'g');
+                        branchInner.setAttribute('class', 'branch-inner');
+                        branchInnerGroups.push(branchInner);
+
+                        // Branch path – starts at (0,0) = stem attachment, extends outward
+                        const branchLen = 38 + Math.random() * 28;
+                        const branchPath = document.createElementNS(svgNS, 'path');
+                        // Simple outward curve (no dip back toward origin)
+                        branchPath.setAttribute('d',
+                            `M 0 0 Q ${branchLen * 0.5} ${-(branchLen * 0.15)}, ${branchLen} ${-(branchLen * 0.06)}`);
+                        branchPath.setAttribute('class', 'branch');
+                        branchPath.setAttribute('fill', 'none');
+                        branchInner.appendChild(branchPath);
+
+                        // Append to DOM before measuring length
+                        branchPositionGroup.appendChild(branchInner);
+                        svg.appendChild(branchPositionGroup);
+
+                        const brLen = branchPath.getTotalLength();
+                        branchPath.style.strokeDasharray = brLen;
+                        branchPath.style.strokeDashoffset = brLen;
+                        branches.push(branchPath);
+
+                        // Leaf group
+                        const leafGroup = document.createElementNS(svgNS, 'g');
+                        leafGroup.setAttribute('class', 'leaf');
+                        leafGroup.style.setProperty('--x', `${branchLen - 2}px`);
+                        leafGroup.style.setProperty('--y', `${-(branchLen * 0.06)}px`);
+                        leafGroup.style.setProperty('--rot', `${50 + Math.random() * 18}deg`);
+
+                        // Leaf shape
+                        const leafPath = document.createElementNS(svgNS, 'path');
+                        leafPath.setAttribute('d',
+                            'M 0 0 C -16 10, -24 44, 0 68 C 24 44, 16 10, 0 0');
+                        leafPath.setAttribute('fill',
+                            i % 3 === 0 ? 'url(#leafGradAlt)' : 'url(#leafGrad)');
+                        leafPath.setAttribute('filter', 'url(#leafShadow)');
+
+                        // Veins
+                        const vein = document.createElementNS(svgNS, 'line');
+                        vein.setAttribute('x1', '0');
+                        vein.setAttribute('y1', '1');
+                        vein.setAttribute('x2', '0');
+                        vein.setAttribute('y2', '62');
+                        vein.setAttribute('stroke', 'rgba(180,220,180,0.35)');
+                        vein.setAttribute('stroke-width', '1');
+                        vein.setAttribute('stroke-linecap', 'round');
+
+                        const veinGroup = document.createElementNS(svgNS, 'g');
+                        veinGroup.setAttribute('stroke', 'rgba(180,220,180,0.22)');
+                        veinGroup.setAttribute('stroke-width', '0.6');
+                        veinGroup.setAttribute('stroke-linecap', 'round');
+                        [
+                            [0, 16, -7, 11],
+                            [0, 28, -9, 5],
+                            [0, 42, -6, 3],
+                            [0, 16, 7, 11],
+                            [0, 28, 9, 5],
+                            [0, 42, 6, 3]
+                        ].forEach(([x1, y1, dx, dy]) => {
+                            const lv = document.createElementNS(svgNS, 'line');
+                            lv.setAttribute('x1', x1);
+                            lv.setAttribute('y1', y1);
+                            lv.setAttribute('x2', dx);
+                            lv.setAttribute('y2', y1 + dy);
+                            veinGroup.appendChild(lv);
+                        });
+
+                        leafGroup.appendChild(leafPath);
+                        leafGroup.appendChild(vein);
+                        leafGroup.appendChild(veinGroup);
+                        branchInner.appendChild(leafGroup);
+                        leaves.push(leafGroup);
+                    });
+
+                    // ── Flower ────────────────
+                    const flowerPosGroup = document.createElementNS(svgNS, 'g');
+                    flowerPosGroup.setAttribute('transform',
+                        `translate(${data.targetX}, ${data.targetY})`);
+                    svg.appendChild(flowerPosGroup);
+
+                    const flowerInner = document.createElementNS(svgNS, 'g');
+                    flowerInner.setAttribute('class', 'flower-inner');
+                    flowerPosGroup.appendChild(flowerInner);
+                    flowerInnerGroups.push(flowerInner);
+
+                    // Receptacle
+                    const base = document.createElementNS(svgNS, 'circle');
+                    base.setAttribute('r', 10 * data.scale);
+                    base.setAttribute('fill', '#0a1f12');
+                    base.setAttribute('class', 'petal');
+                    base.style.setProperty('--rot', '0deg');
+                    base.style.setProperty('--scl', '1');
+                    base.setAttribute('filter', 'url(#petalShadow)');
+                    flowerInner.appendChild(base);
+                    petals.push(base);
+
+                    // Petals – outer first (higher index) renders underneath
+                    for (let idx = data.petalCount - 1; idx >= 0; idx--) {
+                        const progress = idx / data.petalCount;
+                        const angle = idx * 137.5;
+                        const scale = (0.22 + progress * 0.78) * data.scale;
+
+                        const hue = 340 + progress * 16;
+                        const saturation = 80 + progress * 20;
+                        const lightness = 38 - progress * 22;
+
+                        let petalD;
+                        if (progress > 0.62) {
+                            petalD =
+                                'M 0 0 C -44 -18, -62 -92, -26 -122 C -7 -136, 7 -136, 26 -122 C 62 -92, 44 -18, 0 0';
+                        } else if (progress > 0.28) {
+                            petalD =
+                                'M 0 0 C -30 -14, -48 -76, -18 -105 C -5 -118, 5 -118, 18 -105 C 48 -76, 30 -14, 0 0';
+                        } else {
+                            petalD =
+                                'M 0 0 C -17 -10, -28 -58, -8 -82 C -2 -93, 2 -93, 8 -82 C 28 -58, 17 -10, 0 0';
+                        }
+
+                        const petal = document.createElementNS(svgNS, 'path');
+                        petal.setAttribute('d', petalD);
+                        petal.setAttribute('fill',
+                            `hsl(${hue}, ${saturation}%, ${lightness}%)`);
+                        petal.setAttribute('filter',
+                            progress < 0.15 ? 'url(#petalGlowInner)' : 'url(#petalGlow)');
+                        petal.setAttribute('class', 'petal');
+                        petal.style.setProperty('--rot', `${angle}deg`);
+                        petal.style.setProperty('--scl', scale);
+
+                        flowerInner.appendChild(petal);
+                        petals.push(petal);
+                    }
+                });
+
+                createSparkles(w, h, flowerPositions);
+                createParticles(w, h);
+            }
+
+            function resetAllElements() {
+                // Temporarily disable ALL transitions to prevent
+                // the "wilting" animation when resetting dashoffset
+                const allAnimated = [...stems, ...branches, ...leaves, ...petals];
+
+                allAnimated.forEach(el => {
+                    el.style.transition = 'none';
+                });
+
+                stems.forEach(stem => {
+                    stem.classList.remove('grow');
+                    const len = stem.getTotalLength();
+                    stem.style.strokeDasharray = len;
+                    stem.style.strokeDashoffset = len;
+                });
+
+                branches.forEach(branch => {
+                    branch.classList.remove('grow');
+                    const len = branch.getTotalLength();
+                    branch.style.strokeDasharray = len;
+                    branch.style.strokeDashoffset = len;
+                });
+
+                leaves.forEach(leaf => leaf.classList.remove('bloom'));
+                petals.forEach(petal => petal.classList.remove('bloom'));
+                flowerInnerGroups.forEach(g => g.classList.remove('swaying'));
+                branchInnerGroups.forEach(g => g.classList.remove('swaying'));
+                textContainer.classList.remove('text-visible');
+
+                // Force reflow to apply the 'none' transition changes instantly
+                void svg.offsetHeight;
+
+                // Restore transitions (empty string = use CSS defaults)
+                allAnimated.forEach(el => {
+                    el.style.transition = '';
+                });
+            }
+
+            function triggerAnimationSequence() {
+                resetAllElements();
+
+                // Extra safety: force another reflow after restoring transitions
+                void svg.offsetHeight;
+
+                requestAnimationFrame(() => {
+                    // Phase 1: Stems grow (0ms, transition 2.5s)
+                    stems.forEach(stem => stem.classList.add('grow'));
+
+                    // Phase 2: Branches + leaves (1000ms)
+                    const t1 = setTimeout(() => {
+                        branches.forEach(branch => branch.classList.add('grow'));
+                        leaves.forEach(leaf => leaf.classList.add('bloom'));
+                    }, 1000);
+                    animTimeouts.push(t1);
+
+                    // Phase 3: Petals bloom (2500ms)
+                    const t2 = setTimeout(() => {
+                        petals.forEach(petal => petal.classList.add('bloom'));
+                    }, 2500);
+                    animTimeouts.push(t2);
+
+                    // Phase 4: Text appears (4000ms)
+                    const t3 = setTimeout(() => {
+                        textContainer.classList.add('text-visible');
+                    }, 4000);
+                    animTimeouts.push(t3);
+
+                    // Phase 5: Swaying starts (5500ms)
+                    const t4 = setTimeout(() => {
+                        flowerInnerGroups.forEach(g => g.classList.add('swaying'));
+                        branchInnerGroups.forEach(g => g.classList.add('swaying'));
+                    }, 5500);
+                    animTimeouts.push(t4);
+                });
+            }
+
+            function startAnimation() {
+                if (animationStarted) return;
+                animationStarted = true;
+                initDesign();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        triggerAnimationSequence();
+                    });
+                });
+            }
+
+            // ── Entry points ────────────────────
+            if (document.readyState === 'complete') {
+                startAnimation();
+            } else {
+                window.addEventListener('load', startAnimation, { once: true });
+            }
+
+            // bfcache support
+            window.addEventListener('pageshow', (event) => {
+                if (event.persisted) {
+                    animationStarted = false;
+                    clearSVG();
+                    startAnimation();
                 }
             });
 
-            for(let i = 0; i < 40; i++) {
-                const particle = document.createElementNS(svgNS, "circle");
-                particle.setAttribute("cx", Math.random() * w);
-                particle.setAttribute("cy", h + 50);
-                particle.setAttribute("r", Math.random() * 2.5 + 0.5);
-                particle.setAttribute("class", "particle");
-                
-                particle.style.setProperty('--duration', `${8 + Math.random() * 10}s`);
-                particle.style.setProperty('--delay', `${Math.random() * 10}s`);
-                
-                svg.appendChild(particle);
-            }
-        }
-
-        function triggerAnimationSequence() {
-            setTimeout(() => {
-                // 1. Grow main stems
-                stems.forEach(stem => stem.classList.add('grow'));
-                // 2. Grow branches
-                branches.forEach(branch => branch.classList.add('grow'));
-                // 3. Bloom leaves
-                leaves.forEach(leaf => leaf.classList.add('bloom'));
-                // 4. Bloom petals
-                petals.forEach(petal => petal.classList.add('bloom'));
-            }, 100);
-
-            setTimeout(() => {
-                const text = document.getElementById('text-container');
-                text.classList.add('text-visible');
-            }, 6800);
-        }
-
-        window.addEventListener('load', () => {
-            initDesign();
-            requestAnimationFrame(() => {
-                triggerAnimationSequence();
+            // Clean up when page is frozen
+            window.addEventListener('pagehide', () => {
+                clearAllTimeouts();
+                animationStarted = false;
             });
-        });
+        })();
     </script>
 </body>
+
 </html>
